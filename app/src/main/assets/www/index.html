@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1a1a" id="metaThemeColor">
+    <title>EvilCalc</title>
+    <style>
+        :root {
+            --bg-body: #1a1a1a;
+            --bg-calc: #2a2a2a;
+            --bg-header: #333;
+            --bg-display: #111;
+            --bg-btn: #2d2d2d;
+            --bg-btn-active: #444;
+            --bg-history-overlay: rgba(0,0,0,0.92);
+            --bg-history-item: #333;
+            --bg-history-hover: #444;
+            --text-primary: #fff;
+            --text-secondary: #e0e0e0;
+            --text-muted: #aaa;
+            --text-dim: #888;
+            --text-faint: #ccc;
+            --accent: #4a9eff;
+            --danger: #ff4444;
+            --warning: #ff8844;
+            --border: #333;
+            --cursor-color: #4a9eff;
+            --scrollbar: #555;
+            --result-bracket: #888;
+        }
+
+        [data-theme="light"] {
+            --bg-body: #e8e8e8;
+            --bg-calc: #ffffff;
+            --bg-header: #f0f0f0;
+            --bg-display: #f5f5f5;
+            --bg-btn: #e0e0e0;
+            --bg-btn-active: #d0d0d0;
+            --bg-history-overlay: rgba(255,255,255,0.95);
+            --bg-history-item: #f0f0f0;
+            --bg-history-hover: #e0e0e0;
+            --text-primary: #1a1a1a;
+            --text-secondary: #333;
+            --text-muted: #666;
+            --text-dim: #888;
+            --text-faint: #444;
+            --accent: #0066cc;
+            --danger: #cc0000;
+            --warning: #cc6600;
+            --border: #ddd;
+            --cursor-color: #0066cc;
+            --scrollbar: #ccc;
+            --result-bracket: #888;
+        }
+
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+
+        body{
+            background:var(--bg-body);
+            color:var(--text-primary);
+            font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+            display:flex;justify-content:center;align-items:center;
+            min-height:100vh;overflow:hidden;touch-action:manipulation;
+            transition:background 0.3s,color 0.3s;
+        }
+
+        .calculator{
+            width:100%;max-width:420px;height:100vh;max-height:780px;
+            background:var(--bg-calc);display:flex;flex-direction:column;overflow:hidden;
+            transition:background 0.3s;
+        }
+
+        .header{
+            display:flex;justify-content:space-between;align-items:center;
+            padding:10px 16px;background:var(--bg-header);
+            transition:background 0.3s;
+        }
+
+        .header-title{
+            font-size:16px;color:var(--text-faint);
+            font-weight:600;letter-spacing:0.5px;
+        }
+
+        .header-actions{display:flex;gap:8px;align-items:center}
+
+        .header-btn{
+            font-size:20px;cursor:pointer;color:var(--text-muted);
+            background:none;border:none;padding:4px 8px;
+        }
+
+        .theme-toggle{position:relative;width:44px;height:24px}
+        .theme-toggle input{display:none}
+        .theme-slider{
+            position:absolute;top:0;left:0;right:0;bottom:0;
+            background:#555;border-radius:12px;cursor:pointer;
+            transition:background 0.3s;
+        }
+        .theme-slider::before{
+            content:'';position:absolute;
+            width:18px;height:18px;left:3px;bottom:3px;
+            background:#fff;border-radius:50%;
+            transition:transform 0.3s;
+        }
+        .theme-toggle input:checked+.theme-slider{background:var(--accent)}
+        .theme-toggle input:checked+.theme-slider::before{transform:translateX(20px)}
+
+        .expression-display{
+            background:var(--bg-display);padding:12px 16px;
+            min-height:120px;max-height:160px;overflow-y:auto;
+            font-size:28px;line-height:1.4;word-wrap:break-word;
+            color:var(--text-secondary);border-bottom:1px solid var(--border);
+            cursor:text;user-select:none;-webkit-user-select:none;
+        }
+
+        .expression-display::-webkit-scrollbar{width:4px}
+        .expression-display::-webkit-scrollbar-thumb{background:var(--scrollbar);border-radius:2px}
+
+        .cursor{
+            display:inline-block;width:2px;height:1.1em;
+            background:var(--cursor-color);vertical-align:text-bottom;
+            animation:blink 1s step-end infinite;margin:0 1px;
+        }
+        @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+        .result-display{
+            background:var(--bg-display);padding:16px;text-align:center;
+            border-bottom:1px solid var(--border);min-height:70px;
+            display:flex;align-items:center;justify-content:center;gap:8px;
+        }
+
+        .result-main{font-size:42px;font-weight:300;color:var(--text-primary)}
+        .result-bracket{font-size:42px;font-weight:300;color:var(--result-bracket)}
+
+        .buttons-grid{
+            display:grid;grid-template-columns:repeat(5,1fr);
+            gap:1px;background:var(--bg-body);flex:1;
+        }
+
+        .btn{
+            background:var(--bg-btn);border:none;color:var(--text-primary);
+            font-size:26px;cursor:pointer;display:flex;
+            align-items:center;justify-content:center;position:relative;
+            min-height:64px;user-select:none;-webkit-user-select:none;
+        }
+        .btn:active{background:var(--bg-btn-active)}
+        .btn-operator{color:var(--accent);font-size:30px}
+        .btn-clear{color:var(--danger);font-size:28px}
+        .btn-backspace{color:var(--danger);font-size:22px}
+        .btn-backspace svg{width:32px;height:24px}
+        .btn-history{font-size:18px;color:var(--text-faint)}
+        .btn-percent{color:var(--text-primary)}
+        .btn-equals{color:var(--accent);font-size:32px}
+        .btn-sub{color:var(--accent);font-size:32px}
+        .btn-sub-label{position:absolute;top:4px;font-size:10px;color:var(--text-dim)}
+        .btn-dot-label{position:absolute;top:4px;font-size:10px;color:var(--text-dim)}
+        .btn-nav{color:var(--accent);font-size:24px}
+        .btn-del{color:var(--warning);font-size:20px}
+
+        .history-panel{
+            position:fixed;top:0;left:0;width:100%;height:100%;
+            background:var(--bg-history-overlay);z-index:100;
+            display:none;flex-direction:column;padding:20px;overflow-y:auto;
+        }
+        .history-panel.active{display:flex}
+        .history-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+        .history-header h2{color:var(--text-primary);font-size:20px}
+        .history-close{background:none;border:none;color:var(--text-primary);font-size:28px;cursor:pointer}
+        .history-item{
+            background:var(--bg-history-item);padding:12px 16px;margin-bottom:8px;
+            border-radius:6px;cursor:pointer;display:flex;
+            justify-content:space-between;align-items:center;gap:12px;
+        }
+        .history-item:active{background:var(--bg-history-hover)}
+        .history-item-content{flex:1;min-width:0}
+        .history-expr{color:var(--text-muted);font-size:14px;margin-bottom:4px;word-wrap:break-word}
+        .history-result{color:var(--text-primary);font-size:22px}
+        .history-delete{background:none;border:none;color:var(--danger);font-size:22px;cursor:pointer;padding:8px;flex-shrink:0}
+        .history-empty{color:var(--text-dim);text-align:center;margin-top:40px;font-size:16px}
+        .history-clear-btn{
+            background:var(--danger);color:#fff;border:none;
+            padding:10px 20px;border-radius:6px;cursor:pointer;margin-top:20px;font-size:14px;
+        }
+
+        @media(max-width:420px){
+            .calculator{max-height:100vh;border-radius:0}
+            .btn{min-height:58px;font-size:24px}
+            .result-main,.result-bracket{font-size:36px}
+            .expression-display{font-size:24px}
+        }
+        @media(max-height:700px){
+            .btn{min-height:50px}
+            .expression-display{min-height:80px;max-height:100px}
+        }
+    </style>
+</head>
+<body>
+<div class="calculator">
+    <div class="header">
+        <span class="header-title">EvilCalc</span>
+        <div class="header-actions">
+            <label class="theme-toggle">
+                <input type="checkbox" id="themeSwitch" onchange="toggleTheme()">
+                <span class="theme-slider"></span>
+            </label>
+            <button class="header-btn" onclick="toggleMenu()"></button>
+        </div>
+    </div>
+    <div class="expression-display" id="expressionDisplay"></div>
+    <div class="result-display">
+        <span class="result-main" id="resultMain">0</span>
+        <span class="result-bracket" id="resultBracket"></span>
+    </div>
+    <div class="buttons-grid">
+        <button class="btn btn-history" onclick="showHistory()">ИСТ</button>
+        <button class="btn" onclick="inputChar('(')">(</button>
+        <button class="btn" onclick="inputChar(')')">)</button>
+        <button class="btn btn-clear" onclick="clearAll()">C</button>
+        <button class="btn btn-backspace" onclick="backspace()"><svg viewBox="0 0 32 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12L10 2H28V22H10L2 12Z"/><path d="M14 8L22 16M22 8L14 16"/></svg></button>
+        <button class="btn" onclick="inputChar('7')">7</button>
+        <button class="btn" onclick="inputChar('8')">8</button>
+        <button class="btn" onclick="inputChar('9')">9</button>
+        <button class="btn btn-operator" onclick="inputChar('÷')">÷</button>
+        <button class="btn btn-nav" onclick="moveCursor(-1)">←</button>
+        <button class="btn" onclick="inputChar('4')">4</button>
+        <button class="btn" onclick="inputChar('5')">5</button>
+        <button class="btn" onclick="inputChar('6')">6</button>
+        <button class="btn btn-operator" onclick="inputChar('×')">×</button>
+        <button class="btn btn-nav" onclick="moveCursor(1)">→</button>
+        <button class="btn" onclick="inputChar('1')">1</button>
+        <button class="btn" onclick="inputChar('2')">2</button>
+        <button class="btn" onclick="inputChar('3')">3</button>
+        <button class="btn btn-sub" onclick="inputChar('-')"><span class="btn-sub-label">+/−</span>−</button>
+        <button class="btn btn-del" onclick="deleteChar()">Del</button>
+        <button class="btn" onclick="inputChar('0')">0</button>
+        <button class="btn" onclick="inputChar('.')"><span class="btn-dot-label">E</span>.</button>
+        <button class="btn btn-percent" onclick="inputChar('%')">%</button>
+        <button class="btn btn-operator" onclick="inputChar('+')">+</button>
+        <button class="btn btn-equals" onclick="calculate()">=</button>
+    </div>
+</div>
+<div class="history-panel" id="historyPanel">
+    <div class="history-header"><h2>История</h2><button class="history-close" onclick="hideHistory()">✕</button></div>
+    <div id="historyList"></div>
+    <button class="history-clear-btn" onclick="clearHistory()">Очистить всю историю</button>
+</div>
+<script>
+const themeSwitch=document.getElementById('themeSwitch');
+const metaThemeColor=document.getElementById('metaThemeColor');
+
+function applyTheme(theme){
+    document.documentElement.setAttribute('data-theme',theme);
+    themeSwitch.checked=(theme==='light');
+    metaThemeColor.content=(theme==='dark')?'#1a1a1a':'#e8e8e8';
+    try{localStorage.setItem('evilcalc-theme',theme)}catch(e){}
+}
+
+function toggleTheme(){
+    applyTheme(themeSwitch.checked?'light':'dark');
+}
+
+(function initTheme(){
+    let saved='dark';
+    try{saved=localStorage.getItem('evilcalc-theme')||'dark'}catch(e){}
+    applyTheme(saved);
+})();
+
+let expression='',cursorPosition=0,history=[];
+
+try{
+    let h=localStorage.getItem('evilcalc-history');
+    if(h)history=JSON.parse(h);
+}catch(e){}
+
+const expressionDisplay=document.getElementById('expressionDisplay'),
+      resultMain=document.getElementById('resultMain'),
+      resultBracket=document.getElementById('resultBracket');
+
+function formatNumber(num){
+    if(num===null||num===undefined||isNaN(num)||!isFinite(num))return'0';
+    let r=Math.round(num*100)/100,s=r.toString(),p=s.split('.'),i=p[0],d=p.length>1?'.'+p[1]:'',n='';
+    if(i.startsWith('-')){n='-';i=i.substring(1)}
+    let f='',c=0;
+    for(let j=i.length-1;j>=0;j--){f=i[j]+f;c++;if(c%3===0&&j>0)f=' '+f}
+    return n+f+d;
+}
+
+function parseExpression(e){return e.replace(/(\d)\s+(\d)/g,'$1$2')}
+
+function safeEval(e){
+    try{let x=e.replace(/[\+\-\*\/]$/,'').trim();if(!x)return null;let r=Function('"use strict";return('+x+')')();return isFinite(r)?r:null}catch(e){return null}
+}
+
+function calculateAll(){
+    if(!expression)return{current:0,percentAmount:0};
+    try{
+        let c=parseExpression(expression).replace(/÷/g,'/').replace(/×/g,'*').replace(/−/g,'-');
+        if(!c.includes('%')){let r=safeEval(c);return{current:r||0,percentAmount:0}}
+        let pi=c.indexOf('%'),bp=c.substring(0,pi),ap=c.substring(pi+1),
+            pm=bp.match(/([\+\-])\s*(\d+\.?\d*)\s*$/);
+        if(!pm){let r=safeEval(bp);return{current:r||0,percentAmount:0}}
+        let po=pm[1],pv=parseFloat(pm[2]),eb=bp.substring(0,pm.index).trim(),sb=0;
+        if(eb){let er=safeEval(eb);if(er!==null)sb=er}
+        let pa=sb*(pv/100),ab=po==='-'?sb-pa:sb+pa;
+        if(ap){let fe=ab+ap,fr=safeEval(fe);if(fr!==null)return{current:fr,percentAmount:pa};return{current:ab,percentAmount:pa}}
+        return{current:ab,percentAmount:pa};
+    }catch(e){return{current:0,percentAmount:0}}
+}
+
+function updateDisplay(){
+    let b=escHtml(expression.substring(0,cursorPosition)),a=escHtml(expression.substring(cursorPosition));
+    expressionDisplay.innerHTML=b+'<span class="cursor"></span>'+a;
+    expressionDisplay.scrollTop=expressionDisplay.scrollHeight;
+}
+
+function escHtml(t){let d=document.createElement('div');d.textContent=t;return d.innerHTML}
+
+function autoCalculate(){
+    if(!expression){resultMain.textContent='0';resultBracket.textContent='';return}
+    let r=calculateAll(),cf=Math.round(r.current*100)/100;
+    resultMain.textContent=formatNumber(cf);
+    if(r.percentAmount>0){let pf=Math.round(r.percentAmount*100)/100;resultBracket.textContent='['+formatNumber(pf)+']'}
+    else resultBracket.textContent='';
+}
+
+function inputChar(c){
+    expression=expression.substring(0,cursorPosition)+c+expression.substring(cursorPosition);
+    cursorPosition++;updateDisplay();autoCalculate();
+}
+
+function backspace(){
+    if(cursorPosition>0){expression=expression.substring(0,cursorPosition-1)+expression.substring(cursorPosition);cursorPosition--;updateDisplay();autoCalculate()}
+}
+
+function deleteChar(){
+    if(cursorPosition<expression.length){expression=expression.substring(0,cursorPosition)+expression.substring(cursorPosition+1);updateDisplay();autoCalculate()}
+}
+
+function moveCursor(d){
+    cursorPosition+=d;if(cursorPosition<0)cursorPosition=0;
+    if(cursorPosition>expression.length)cursorPosition=expression.length;updateDisplay();
+}
+
+expressionDisplay.addEventListener('click',function(e){
+    let rect=expressionDisplay.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;
+    cursorPosition=getCaretPosition(x,y);updateDisplay();
+});
+
+function getCaretPosition(x,y){
+    if(document.caretRangeFromPoint){
+        let range=document.caretRangeFromPoint(x+expressionDisplay.getBoundingClientRect().left,y+expressionDisplay.getBoundingClientRect().top);
+        if(range&&range.startContainer===expressionDisplay.firstChild)return range.startOffset;
+    }
+    if(document.caretPositionFromPoint){
+        let pos=document.caretPositionFromPoint(x+expressionDisplay.getBoundingClientRect().left,y+expressionDisplay.getBoundingClientRect().top);
+        if(pos&&pos.offsetNode===expressionDisplay.firstChild)return pos.offset;
+    }
+    let pos=Math.round(x/16);if(pos<0)pos=0;if(pos>expression.length)pos=expression.length;return pos;
+}
+
+function saveHistory(){try{localStorage.setItem('evilcalc-history',JSON.stringify(history.slice(0,100)))}catch(e){}}
+
+function calculate(){
+    if(!expression)return;
+    let r=calculateAll(),fr=formatNumber(Math.round(r.current*100)/100),fp=formatNumber(Math.round(r.percentAmount*100)/100);
+    history.unshift({expression:expression,result:fr,percentAmount:r.percentAmount>0?fp:null});
+    saveHistory();resultMain.textContent=fr;
+    if(r.percentAmount>0)resultBracket.textContent='['+fp+']';else resultBracket.textContent='';
+}
+
+function clearAll(){
+    if(expression){
+        let r=calculateAll(),fr=formatNumber(Math.round(r.current*100)/100),fp=formatNumber(Math.round(r.percentAmount*100)/100);
+        history.unshift({expression:expression,result:fr,percentAmount:r.percentAmount>0?fp:null});saveHistory();
+    }
+    expression='';cursorPosition=0;updateDisplay();resultMain.textContent='0';resultBracket.textContent='';
+}
+
+function showHistory(){renderHistory();document.getElementById('historyPanel').classList.add('active')}
+function hideHistory(){document.getElementById('historyPanel').classList.remove('active')}
+
+function renderHistory(){
+    const list=document.getElementById('historyList');
+    if(history.length===0){list.innerHTML='<div class="history-empty">История пуста</div>';return}
+    let html='';
+    history.forEach((item,index)=>{
+        let bt=item.percentAmount?' ['+item.percentAmount+']':'';
+        html+='<div class="history-item"><div class="history-item-content" onclick="loadHistory('+index+')"><div class="history-expr">'+escHtml(item.expression)+'</div><div class="history-result">'+item.result+bt+'</div></div><button class="history-delete" onclick="deleteHistoryItem(event,'+index+')">✕</button></div>';
+    });
+    list.innerHTML=html;
+}
+
+function deleteHistoryItem(e,i){e.stopPropagation();history.splice(i,1);saveHistory();renderHistory()}
+
+function loadHistory(i){
+    if(expression){
+        let r=calculateAll(),fr=formatNumber(Math.round(r.current*100)/100),fp=formatNumber(Math.round(r.percentAmount*100)/100);
+        history.unshift({expression:expression,result:fr,percentAmount:r.percentAmount>0?fp:null});saveHistory();
+    }
+    let item=history[i];expression=item.expression;cursorPosition=expression.length;
+    history.splice(i,1);saveHistory();updateDisplay();autoCalculate();hideHistory();
+}
+
+function clearHistory(){history=[];saveHistory();renderHistory()}
+function toggleMenu(){showHistory()}
+
+expressionDisplay.addEventListener('focus',function(e){e.preventDefault();this.blur()});
+
+document.addEventListener('keydown',function(e){
+    if(e.key==='ArrowLeft'){e.preventDefault();moveCursor(-1)}
+    else if(e.key==='ArrowRight'){e.preventDefault();moveCursor(1)}
+    else if(e.key==='Backspace'){e.preventDefault();backspace()}
+    else if(e.key==='Delete'){e.preventDefault();deleteChar()}
+    else if(e.key==='Home'){e.preventDefault();cursorPosition=0;updateDisplay()}
+    else if(e.key==='End'){e.preventDefault();cursorPosition=expression.length;updateDisplay()}
+});
+
+updateDisplay();autoCalculate();
+</script>
+</body>
+</html>
